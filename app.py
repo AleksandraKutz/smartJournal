@@ -5,7 +5,7 @@ from config import mongo_pass
 app = Flask(__name__)
 
 client = MongoClient(f"mongodb://admin:{mongo_pass}@137.184.197.46:27017/")
-db = client['smartJurnal']
+db = client['smartJournal']
 userTable_collection = db['user_table']
 
 def getuser_post(username):
@@ -29,9 +29,9 @@ def homepage():
 def user_history(username):
     post = getuser_post(username)
     if post:
-        return jsonify(post)
+        return jsonify(list(post))
     else:
-        return jsonify({"User not found"})
+        return jsonify({"message":"User not found"})
 
 
 
@@ -60,7 +60,7 @@ def addNew_post(username):
         }
 
         userTable_collection.insert_one(new_user)
-        return jsonify({"New user created with new post"})
+        return jsonify({"message": "New user created with new post"})
 
     
     userTable_collection.update_one(
@@ -74,7 +74,7 @@ def addNew_post(username):
         }}}
     )
 
-    return jsonify({"New post was added to the user"})
+    return jsonify({"message":"New post was added to the user"})
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,10 +1,10 @@
 
 
 from pymongo import MongoClient
+from config import mongo_pass
 
 
-
-client = MongoClient("mongodb://admin:CandleCanOud23#@137.184.197.46:27017/")
+client = MongoClient("mongodb://admin:{mongo_pass}@137.184.197.46:27017/")
 
 
 
