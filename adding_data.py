@@ -1,39 +1,15 @@
-
-
 from pymongo import MongoClient
 from config import mongo_pass
+import user_data as u
 
 
 client = MongoClient("mongodb://admin:{mongo_pass}@137.184.197.46:27017/")
 
 
-
 db = client['smartJournal']
 
 
-
-
 userTable_collection = db['user_table']
-
-
-
-
-def adding_user(user_info):
-    try:
-        userTable_collection.insert_one(user_info)
-    except Exception as e:
-        print(f"Error with adding user to db {e}")
-   
-
-
-
-def adding_users(users_info):
-    try:
-        userTable_collection.insert_many(users_info)
-    except Exception as e:
-        print(f"Error with adding users to db {e}")
-   
-
 
 
 
@@ -81,15 +57,14 @@ new_users = [
 
 
 
-adding_users(new_users)
+u.adding_users(new_users)
 
 
 
 for user in userTable_collection.find():
     print(user)
 
-
-
+    
 new_users2 = [
     {
         "username": "silly_billy77",
@@ -153,49 +128,7 @@ new_users2 = [
 
 
 
-adding_users(new_users2)
-
-
-
+u.adding_users(new_users2)
 
 for user in userTable_collection.find():
     print(user)
-
-
-
-
-def lookup_user(username):
-    user = userTable_collection.find_one({"username": username})
-    if user:
-        print(user)
-    else:
-        print("This user no exist in db")
-
-
-
-lookup_user("lazy_louie23")
-
-
-
-def getuser_post(username):
-    user = userTable_collection.find_one({"username": username})
-    if user:
-        for entry in user['entries']:
-            print(f"Date: {entry['timestamp']}")
-            print(f"Title: {entry['title']}")
-            print(f"Text: {entry['text']}")
-            print(f"Word_frequencies: {entry['word_frequencies']}")
-            print(f"Classification: {entry['classification']}")
-            print("-------------")
-    else:
-        print("User is not in db")
-
-
-
-getuser_post("meme_queen42")
-
-
-
-
-
-
