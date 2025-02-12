@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from pymongo import MongoClient
 import datetime
 from config import mongo_pass
-import all_modules as am
+import user_data as u
 
 
 app = Flask(__name__)
@@ -23,7 +23,7 @@ def homepage():
 @app.route("/user/<username>/history", methods=["GET"])
 
 def user_history(username):
-    post = am.getuser_post(username)
+    post = u.getuser_post(username)
     if post:
         return jsonify(list(post))
     else:
@@ -34,7 +34,7 @@ def user_history(username):
 @app.route("/user/<username>/new_post", methods=["POST"])
 
 def add_new_post(username):
-    return am.addNew_post(username)
+    return u.addNew_post(username)
 
 
 if __name__ == "__main__":
