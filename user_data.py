@@ -2,7 +2,10 @@ from flask import Flask, jsonify, request
 from pymongo import MongoClient
 import datetime
 from config import mongo_pass
-#from transformers import pipeline
+from transformers import pipeline
+from sklearn.feature_extraction.text import CountVectorizer
+
+import ML
 
 client = MongoClient(f"mongodb://admin:{mongo_pass}@137.184.197.46:27017/")
 
@@ -39,8 +42,9 @@ def addNew_post(username, text, title):
         }
 
         userTable_collection.insert_one(new_user)
-        #return jsonify({"message": "New user created with new post"})
-
+        
+    top_10_words = ML.countFrequency(text)
+    classification = ML.checkEmotions(text)
     
     userTable_collection.update_one(
         {"username": username},
