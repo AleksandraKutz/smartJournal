@@ -57,7 +57,7 @@ def addNew_post(username, text, title):
         }}}
     )
 
-    return jsonify({"message":"New post was added to the user"})
+    #return jsonify({"message":"New post was added to the user"})
 
 
 

@@ -15,7 +15,7 @@ d3.select("#submitButton").on("click", function() {
 
     console.log(postData);
 
-    fetch("http://127.0.0.1:5000/new_journal_entry", {
+    fetch("http://127.0.0.1:8800/new_journal_entry", {
 
         method: "POST",
         headers: {
