@@ -4,7 +4,6 @@ import datetime
 from config import mongo_pass
 from transformers import pipeline
 from sklearn.feature_extraction.text import CountVectorizer
-
 import ML
 
 client = MongoClient(f"mongodb://admin:{mongo_pass}@137.184.197.46:27017/")
@@ -42,18 +41,19 @@ def addNew_post(username, text, title):
         }
 
         userTable_collection.insert_one(new_user)
-        
+
     top_10_words = ML.countFrequency(text)
-    classification = ML.checkEmotions(text)
     
+    result = ML.checkEmotions(text)
+
     userTable_collection.update_one(
         {"username": username},
         {"$push": {"entries": {
             "timestamp": timestamp,
             "title": title,
             "text": text,
-            "word_frequencies": [],
-            "classification": []
+            "word_frequencies": top_10_words,
+            "classification": result
         }}}
     )
 
@@ -66,7 +66,4 @@ text  = getuser_post("silly_billy77")
 print(text)
 print("afterg getuser")
 #lookup_user("lazy_louie23")
-
-
-
 
