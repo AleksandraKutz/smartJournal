@@ -23,8 +23,13 @@ d3.select("#submitButton").on("click", function() {
         },
         body: JSON.stringify(postData)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log("fetching");
+            return response.json()
+        })
         .then(data => {
+
+            d3.select("#analysis").text(JSON.stringify(data));
             console.log("Response Data:", data); // Handle the response
         })
         .catch(error => {

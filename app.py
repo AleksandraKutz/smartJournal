@@ -5,6 +5,7 @@ import datetime
 from config import mongo_pass
 import user_data
 from sklearn.feature_extraction.text import CountVectorizer
+import logic
 
 app = Flask(__name__)
 
@@ -41,7 +42,12 @@ def new_journal_entry():
     title = post["title"]
     print(post)
 
-    return user_data.addNew_post(username, text, title)
+    ##business logic object
+    analysis = logic.analyzeAndStoreJournal(username,text,title)
+
+    print(analysis)
+    #do the count vectorize here and ml analye here and pass results into the user data method
+    return jsonify(analysis)
 
 
 if __name__ == "__main__":

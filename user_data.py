@@ -29,7 +29,7 @@ def getuser_post(username):
         return None
     
 
-def addNew_post(username, text, title):
+def addNew_post(username, text, title, analysis):
     user = userTable_collection.find_one({"username": username})
 
     timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -42,9 +42,7 @@ def addNew_post(username, text, title):
 
         userTable_collection.insert_one(new_user)
 
-    top_10_words = ML.countFrequency(text)
-    
-    result = ML.checkEmotions(text)
+    #top_10_words = ML.countFrequency(text)
 
     userTable_collection.update_one(
         {"username": username},
@@ -52,18 +50,13 @@ def addNew_post(username, text, title):
             "timestamp": timestamp,
             "title": title,
             "text": text,
-            "word_frequencies": top_10_words,
-            "classification": result
+            "word_frequencies": [],
+            "classification": analysis
         }}}
     )
 
-    #return jsonify({"message":"New post was added to the user"})
+    return;
 
-
-
-print("b efore getuser")
 text  = getuser_post("silly_billy77")
-print(text)
-print("afterg getuser")
-#lookup_user("lazy_louie23")
+
 
