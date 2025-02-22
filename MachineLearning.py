@@ -4,6 +4,9 @@ import json
 client = openai.OpenAI( api_key = openai_key )
 
 
+
+
+
 def analyze_text(entry):
     
     prompt = '''

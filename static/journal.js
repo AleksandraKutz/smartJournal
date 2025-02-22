@@ -1,8 +1,16 @@
 
+function handleResponseToJournalSubmission(classification){
 
-//button handler
-d3.select("#submitButton").on("click", function() {
+    console.log(classification);
+    //use d3 to select and set slider values
 
+
+}
+
+
+function postUserJournal(){
+
+    // get user journal parameters
     var username = d3.select("#username").property("value");
     var text = d3.select("#text").property("value");
     var title = d3.select("#title").property("value");
@@ -13,31 +21,26 @@ d3.select("#submitButton").on("click", function() {
         "title": title
     };
 
-    console.log(postData);
-
     fetch("http://127.0.0.1:8800/new_journal_entry", {
 
-        method: "POST",
-        headers: {
+            method: "POST",
+            headers: {
             "Content-Type": "application/json"
-        },
-        body: JSON.stringify(postData)
+            },
+            body: JSON.stringify(postData)
         })
-        .then(response => {
-            console.log("fetching");
-            return response.json()
-        })
+        .then(response => response.json())
         .then(data => {
 
-            d3.select("#analysis").text(JSON.stringify(data));
-            console.log("Response Data:", data); // Handle the response
+            handleResponseToJournalSubmission(data);
+
         })
         .catch(error => {
-            console.error("Error posting data:", error); // Handle any errors
+            console.error("Error posting data:", error); 
         });
 
-        
-});
+}
 
 
-//post journal method
+//button handler
+d3.select("#submitButton").on("click", postUserJournal);

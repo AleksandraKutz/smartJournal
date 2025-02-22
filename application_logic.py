@@ -1,11 +1,11 @@
-import user_data
+import database_layer
 import MachineLearning
 
 def analyzeAndStoreJournal(username, text, title):
 
     ml_results = MachineLearning.analyze_text(text)
 
-    user_data.addNew_post(username, text, title, ml_results)
+    database_layer.addNew_post(username, text, title, ml_results)
 
     return ml_results
 
