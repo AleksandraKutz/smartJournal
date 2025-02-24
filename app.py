@@ -32,10 +32,20 @@ def new_journal_entry():
     username = post["username"]
     text = post["text"]
     title = post["title"]
+    action = post.get("action", "analyze_and_save")
+    
     print(post)
 
-    analysis = application_logic.analyzeAndStoreJournal(username,text,title)
-
+    if action == "analyze":
+        analysis = application_logic.analyzeJournal(username, text, title)
+    
+    elif action == "analyze_and_save":
+        analysis = application_logic.analyzeAndStoreJournal(username, text, title)
+    
+    elif action == "submit":
+        classification = post.get("classification", {})
+        analysis = application_logic.saveJournal(username, text, title, classification)
+    
     print(analysis)
     return jsonify(analysis)
 

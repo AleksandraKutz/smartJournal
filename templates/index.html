@@ -8,17 +8,41 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script> 
     <style>
-        #sadnessSlider::-webkit-slider-runnable-track {
+        #angerSlider::-webkit-slider-runnable-track {
             background: #f8d7da;
         }
-        #sadnessSlider::-webkit-slider-thumb {
+        #angerSlider::-webkit-slider-thumb {
             background: #dc3545;
         }
-        #gratitudeSlider::-webkit-slider-runnable-track {
-            background: #d4edda;
+        #fearSlider::-webkit-slider-runnable-track {
+            background: #b2e1ed;
         }
-        #gratitudeSlider::-webkit-slider-thumb {
-            background: #28a745;
+        #fearSlider::-webkit-slider-thumb {
+            background: #1da3cf;
+        }
+        #joySlider::-webkit-slider-runnable-track {
+            background: #f5f26e;
+        }
+        #joySlider::-webkit-slider-thumb {
+            background: #f4f13cf3;
+        }
+        #sadnessSlider::-webkit-slider-runnable-track {
+            background: #475f4c;
+        }
+        #sadnessSlider::-webkit-slider-thumb {
+            background: #679b73;
+        }
+        #surpriseSlider::-webkit-slider-runnable-track {
+            background: #d89dcd;
+        }
+        #surpriseSlider::-webkit-slider-thumb {
+            background: #883389;
+        }
+        #disgustSlider::-webkit-slider-runnable-track {
+            background: #e9af82;
+        }
+        #disgustSlider::-webkit-slider-thumb {
+            background: #703403;
         }
     </style>
 </head>
@@ -54,7 +78,9 @@
                         <label for="entryContent" class="form-label">Content</label>
                         <textarea class="form-control" id="text" rows="6" placeholder="Write your thoughts..."></textarea>
                     </div>
-                    <button type="button" class="btn btn-success", id="submitButton">Save Entry</button>
+                    <!-- Here are buttons -->
+                    <button type="button" class="btn btn-primary", id ="analyzeButton">Analyze Journal</button>
+                    <button type="button" class="btn btn-success disabled", id="submitButton">Save Entry</button>
                 </form>
             </div>
             
@@ -63,29 +89,32 @@
                 <h5>Detected Moods</h5>
                 <div class="mb-3">
                     <label class="form-label text-danger">Anger</label>
-                    <input type="range" class="form-range" min="0" max="100" value="50" id="angerSlider">
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="angerSlider">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label text-success">Fear</label>
-                    <input type="range" class="form-range" min="0" max="100" value="50" id="fearSlider">
+                    <label class="form-label text-primary">Fear</label>
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="fearSlider">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label text-success">Joy</label>
-                    <input type="range" class="form-range" min="0" max="100" value="50" id="joySlider">
+                    <label class="form-label text-warning">Joy</label>
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="joySlider">
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-success">Sadness</label>
-                    <input type="range" class="form-range" min="0" max="100" value="50" id="sadnessSlider">
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="sadnessSlider">
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-success">Surprise</label>
-                    <input type="range" class="form-range" min="0" max="100" value="50" id="surpriseSlider">
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="surpriseSlider">
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-success">Disgust</label>
-                    <input type="range" class="form-range" min="0" max="100" value="50" id="disgustSlider">
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="disgustSlider">
                 </div>
-                <div id="analysis">something something</div>
+                <div id="analysis">Triggers:
+                    <div id ="triggers"></div>
+                </div>
+                <div i
             </div>
         </div>
     </div>
