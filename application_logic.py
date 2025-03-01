@@ -1,6 +1,7 @@
 import database_layer
 import MachineLearning
 
+print("importing application logic")
 def analyzeAndStoreJournal(username, text, title):
 
     ml_results = MachineLearning.analyze_text(text)

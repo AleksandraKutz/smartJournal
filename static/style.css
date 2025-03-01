@@ -1,0 +1,60 @@
+#angerSlider::-webkit-slider-runnable-track {
+    background: #f8d7da;
+}
+#angerSlider::-webkit-slider-thumb {
+    background: #dc3545;
+}
+#fearSlider::-webkit-slider-runnable-track {
+    background: #b2e1ed;
+}
+#fearSlider::-webkit-slider-thumb {
+    background: #1da3cf;
+}
+#joySlider::-webkit-slider-runnable-track {
+    background: #f5f26e;
+}
+#joySlider::-webkit-slider-thumb {
+    background: #f4f13cf3;
+}
+#sadnessSlider::-webkit-slider-runnable-track {
+    background: #475f4c;
+}
+#sadnessSlider::-webkit-slider-thumb {
+    background: #679b73;
+}
+#surpriseSlider::-webkit-slider-runnable-track {
+    background: #d89dcd;
+}
+#surpriseSlider::-webkit-slider-thumb {
+    background: #883389;
+}
+#disgustSlider::-webkit-slider-runnable-track {
+    background: #e9af82;
+}
+#disgustSlider::-webkit-slider-thumb {
+    background: #703403;
+}
+
+.calendar .row {
+    cursor: pointer;
+  }
+  .calendar .col {
+    text-align: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    min-height: 40px; /* Ensures visibility; adjust as needed */
+  }
+  .outside-year {
+    opacity: 0.5;
+  }
+  .happy {
+    background-color: green;
+    color: white;
+  }
+  .sad {
+    background-color: blue;
+    color: white;
+  }
+  .no-mood {
+    background-color: #f0f0f0;
+  }

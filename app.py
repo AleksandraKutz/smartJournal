@@ -6,6 +6,7 @@ from config import mongo_pass
 from sklearn.feature_extraction.text import CountVectorizer
 import application_logic
 
+print("starting api")
 app = Flask(__name__)
 
 CORS(app)
