@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from pymongo import MongoClient
 import datetime
 from config import mongo_pass
-from transformers import pipeline
+#from transformers import pipeline
 from sklearn.feature_extraction.text import CountVectorizer
 import ML
 
@@ -24,10 +24,19 @@ def getuser_post(username):
     print("before getuserpost inside");
     user  = userTable_collection.find_one({"username": username})
     if user:
-        return user['entries']
+        print(user)
+        return user
     else:
         return None
     
+def getuser_history(username):
+    print("before getuserpost inside");
+    user  = userTable_collection.find_one({"username": username});
+    if user:
+        print(user)
+        return user['entries']
+    else:
+        return None
 
 def addNew_post(username, text, title, analysis):
     user = userTable_collection.find_one({"username": username})
@@ -57,6 +66,7 @@ def addNew_post(username, text, title, analysis):
 
     return;
 
-text  = getuser_post("silly_billy77")
-
+#text  = getuser_post("silly_billy77")
+#test = getuser_history("andrews")
+print("database layer imported")
 

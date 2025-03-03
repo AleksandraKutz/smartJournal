@@ -48,7 +48,7 @@ def analyze_text(entry):
     assistant_reply = json.loads(response.choices[0].message.content)
     return assistant_reply
 
-print(analyze_text("I am happy to work"))
+print("ML module loaded")
 
 
 

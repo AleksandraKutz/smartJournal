@@ -105,19 +105,3 @@ function postUserJournal() {
 d3.select("#analyzeButton").on("click", AnalyzeJournal);
 d3.select("#submitButton").on("click", postUserJournal);
 
-// navigation link handler
-d3.selectAll('.nav-link').on('click', function(event) {
-    console.log('nav link clicked');   
-
-    event.preventDefault();
-    const target = d3.select(this).text().trim();
-
-    console.log(target);
-    if (target === 'Home') {
-        d3.select('#journalEntryContainer').classed('d-none', false);
-        d3.select('#journalHistoryContainer').classed('d-none', true);
-    } else if (target === 'History') {
-        d3.select('#journalEntryContainer').classed('d-none', true);
-        d3.select('#journalHistoryContainer').classed('d-none', false);
-    }
-});

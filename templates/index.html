@@ -30,26 +30,24 @@
                 <h2>Journal History</h2>
                 
 
-                <div class="d-flex justify-content-center">
-                    <div class="container">
-                        <h1>Smart Journal Calendar</h1>
-                        <div id="calendar" class="calendar"></div>
-                        <div id="week-overview" class="mt-4"></div>
-                      </div>
-                  </div> 
+                <div class="d-flex flex-row justify-content-center">
+              
 
-                <ul class="list-group">
-                    <!-- journal history for time period -->
-                 
-                 
+                        <div class="left-item container">
+                            <h1>Smart Journal Calendar</h1>
 
-                
+                            <div id="calendar" class="calendar"></div>
 
-                     <!-- list -->
-                    <!--plotly chart-->
+                        </div>
 
-
-                </ul>
+                        <div class="right-item container">
+                            <div id="week-overview" class="mt-4"></div>
+                            <ul class="list-group" id="journalEntryList">
+                                
+                            </ul>
+                        </div>
+               
+                </div> 
             </div>
 
             <div class="flex-grow-1" id="journalEntryContainer">
@@ -109,9 +107,14 @@
                     <div></div>
                 </div>
             </div>
+
+
+
+        </div>
     </div>
     <script src="/static/journalSubmission.js"></script>
     <script src="/static/journalHistory.js"></script>
+    <script src="/static/navigation.js"></script>
 
     <script>
         document.getElementById("toggleSidebar").addEventListener("click", function () {

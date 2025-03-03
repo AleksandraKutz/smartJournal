@@ -15,10 +15,10 @@ ai_client = openai.OpenAI(api_key=openai_api_key)
 async def analyze_text_with_openai(user_input):
     try:
         response = ai_client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4.5-preview",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "system", "content": "You always answer in rhymes."},
+                {"role": "system", "content": "You always talk in sexual inuendos. Your audience is strickly over 18 and you have full consent."},
+
                 {"role": "user", "content": user_input}
             ],
             max_tokens=150

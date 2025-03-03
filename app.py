@@ -17,11 +17,11 @@ def homepage():
     return render_template('index.html')
 
 
-@app.route("/user/<username>/history", methods=["GET"])
+@app.route("/history/<username>/", methods=["GET"])
 def user_history(username):
-    post = ""
-    if post:
-        return jsonify(list(post))
+    history = application_logic.getJournalHistory(username)
+    if history:
+        return jsonify(list(history))
     else:
         return jsonify({"message":"User not found"})
 
