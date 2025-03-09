@@ -27,6 +27,7 @@ def saveJournal(username, text, title, classification):
 def getJournalHistory(username):
     return database_layer.getuser_history(username);
 
+  
 #   assume sliders are there,  analyze button leads to new slider values, use changes on
 # submit button would use get values from sliders
 # difference no ML module would be called, 
