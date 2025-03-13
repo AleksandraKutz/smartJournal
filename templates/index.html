@@ -166,21 +166,11 @@
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label for="text" class="form-label">Content</label>
                                                 <textarea class="form-control" id="text" rows="6" placeholder="Write your thoughts..." required></textarea>
                                                 <div class="invalid-feedback">Please write something in your journal.</div>
                                             </div>
                                             
-                                            <div class="mb-3">
-                                                <label for="templateSelector" class="form-label">Analysis Type</label>
-                                                <select class="form-select" id="templateSelector">
-                                                    <option value="emotion" selected>Emotional Analysis</option>
-                                                    <option value="themes">Theme Identification</option>
-                                                    <option value="self_reflection">Self-Reflection Analysis</option>
-                                                </select>
-                                            </div>
-                                            
-                                            <div class="d-flex gap-2">
+                                            <div class="d-flex justify-content-between mt-4">
                                                 <button type="button" class="btn btn-primary" id="analyzeButton">
                                                     <span class="spinner-border spinner-border-sm d-none" id="analyzeSpinner" role="status" aria-hidden="true"></span>
                                                     Analyze Journal
@@ -198,7 +188,16 @@
                             <div class="col-lg-5 mb-4">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h5 class="mb-0">Analysis Results</h5>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">Analysis Results</h5>
+                                            <div id="templateVisualizerContainer" class="d-none">
+                                                <select id="templateVisualizer" class="form-select form-select-sm">
+                                                    <option value="emotion" selected>Emotion Analysis</option>
+                                                    <option value="themes">Theme Analysis</option>
+                                                    <option value="self_reflection">Self-Reflection</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="card-body">
                                         <!-- Emotional analysis section -->
@@ -333,9 +332,54 @@
                     <!-- Settings view (hidden by default) -->
                     <section id="settingsContainer" class="d-none">
                         <h2>Settings</h2>
-                        <div class="card">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Template Preferences</h5>
+                            </div>
                             <div class="card-body">
-                                <p>Settings and preferences will be available here.</p>
+                                <form id="templatePreferencesForm">
+                                    <div class="mb-3">
+                                        <label for="settingsUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control" id="settingsUsername" placeholder="Enter your username" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Analysis Templates</label>
+                                        <div class="d-flex gap-3 flex-wrap" id="templateCheckboxes">
+                                            <!-- Template checkboxes will be dynamically added here -->
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                            <span>Loading templates...</span>
+                                        </div>
+                                        <div class="form-text">
+                                            Select the templates to use when analyzing your journal entries.
+                                            These templates define what questions are asked about your journal entries.
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary" id="saveTemplatePreferencesBtn">
+                                        <span class="spinner-border spinner-border-sm d-none" id="saveTemplatesSpinner" role="status" aria-hidden="true"></span>
+                                        Save Preferences
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">About Templates</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Templates define the analysis performed on your journal entries. Each template focuses on different aspects:</p>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item">
+                                        <strong>Emotion Analysis</strong> - Identifies emotions and their intensity, plus potential triggers.
+                                    </li>
+                                    <li class="list-group-item">
+                                        <strong>Theme Identification</strong> - Identifies recurring themes and their prominence in your entries.
+                                    </li>
+                                    <li class="list-group-item">
+                                        <strong>Self-Reflection Analysis</strong> - Evaluates the depth of introspection and identifies insights.
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </section>
@@ -349,6 +393,7 @@
     <script src="/static/journalHistory.js"></script>
     <script src="/static/activities.js"></script>
     <script src="/static/navigation.js"></script>
+    <script src="/static/settings.js"></script>
 
     <!-- Initialize History when that view is active -->
     <script>
@@ -455,3 +500,4 @@
     </script>
 </body>
 </html>
+

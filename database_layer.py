@@ -50,6 +50,16 @@ class Repository(ABC):
                               notes: Optional[str] = None) -> bool:
         """Update status of a suggested activity"""
         pass
+    
+    @abstractmethod
+    def get_user_template_preferences(self, username: str) -> Optional[List[str]]:
+        """Get user's template preferences"""
+        pass
+    
+    @abstractmethod
+    def set_user_template_preferences(self, username: str, templates: List[str]) -> bool:
+        """Set user's template preferences"""
+        pass
 
 # MongoDB Implementation
 class MongoRepository(Repository):
@@ -116,7 +126,8 @@ class MongoRepository(Repository):
                 new_user = {
                     "username": username,
                     "entries": [],
-                    "suggested_activities": []  # Add activities array
+                    "suggested_activities": [],  # Add activities array
+                    "template_preferences": ["emotion"]  # Default template
                 }
                 self.users_collection.insert_one(new_user)
             
@@ -153,7 +164,8 @@ class MongoRepository(Repository):
                 new_user = {
                     "username": username,
                     "entries": [],
-                    "suggested_activities": []
+                    "suggested_activities": [],
+                    "template_preferences": ["emotion"]  # Default template
                 }
                 self.users_collection.insert_one(new_user)
             
@@ -245,6 +257,60 @@ class MongoRepository(Repository):
         except Exception as e:
             logger.error(f"Error updating activity status in database: {e}")
             return False
+    
+    def get_user_template_preferences(self, username: str) -> Optional[List[str]]:
+        """Get user's template preferences"""
+        try:
+            user = self.users_collection.find_one({"username": username})
+            
+            if not user:
+                logger.warning(f"User not found when getting template preferences: {username}")
+                return None
+            
+            # Return template preferences if they exist, otherwise return default
+            templates = user.get('template_preferences', ["emotion"])
+            logger.info(f"Retrieved template preferences for user {username}: {templates}")
+            return templates
+            
+        except Exception as e:
+            logger.error(f"Error retrieving template preferences: {e}")
+            return None
+    
+    def set_user_template_preferences(self, username: str, templates: List[str]) -> bool:
+        """Set user's template preferences"""
+        try:
+            # Check if user exists
+            user = self.users_collection.find_one({"username": username})
+            
+            # Create user if they don't exist
+            if not user:
+                logger.info(f"Creating new user when setting template preferences: {username}")
+                new_user = {
+                    "username": username,
+                    "entries": [],
+                    "suggested_activities": [],
+                    "template_preferences": templates
+                }
+                self.users_collection.insert_one(new_user)
+                return True
+            
+            # Update template preferences
+            result = self.users_collection.update_one(
+                {"username": username},
+                {"$set": {"template_preferences": templates}}
+            )
+            
+            if result.modified_count > 0:
+                logger.info(f"Updated template preferences for user: {username}, templates: {templates}")
+                return True
+            else:
+                # The document might exist but no changes were made
+                logger.info(f"No changes to template preferences for user: {username}")
+                return True
+            
+        except Exception as e:
+            logger.error(f"Error setting template preferences: {e}")
+            return False
 
 # Repository Factory
 class RepositoryFactory:
@@ -289,6 +355,14 @@ def update_activity_status(username: str, activity_id: str, completed: bool,
                           rating: Optional[int] = None, notes: Optional[str] = None) -> bool:
     """Update status of a suggested activity"""
     return _repository.update_activity_status(username, activity_id, completed, rating, notes)
+
+def get_user_template_preferences(username: str) -> Optional[List[str]]:
+    """Get user's template preferences"""
+    return _repository.get_user_template_preferences(username)
+
+def set_user_template_preferences(username: str, templates: List[str]) -> bool:
+    """Set user's template preferences"""
+    return _repository.set_user_template_preferences(username, templates)
 
 # Map legacy function names to new ones for backward compatibility
 adding_user = add_user

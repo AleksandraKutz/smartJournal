@@ -113,6 +113,56 @@ def suggest_activity(username):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route("/templates/user/<username>", methods=["GET", "PUT"])
+def user_templates(username):
+    """Get or update a user's template preferences"""
+    try:
+        if request.method == "GET":
+            # Get the user's current template preferences
+            templates = journal_service.get_user_template_preferences(username)
+            
+            if templates is None:
+                return jsonify({"error": "User not found"}), 404
+                
+            return jsonify({
+                "username": username,
+                "templates": templates
+            })
+            
+        elif request.method == "PUT":
+            # Update the user's template preferences
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+                
+            # Get templates list from request
+            templates = data.get('templates')
+            if not templates or not isinstance(templates, list):
+                return jsonify({"error": "Invalid templates format. Expected a list of template keys."}), 400
+                
+            # Validate templates against available templates
+            available_templates = journal_service.get_available_templates()
+            for template in templates:
+                if template not in available_templates:
+                    return jsonify({"error": f"Unknown template: {template}"}), 400
+            
+            # Update the user's template preferences
+            success = journal_service.set_user_template_preferences(username, templates)
+            
+            if success:
+                return jsonify({
+                    "username": username,
+                    "templates": templates,
+                    "message": "Template preferences updated successfully"
+                })
+            else:
+                return jsonify({"error": "Failed to update template preferences"}), 500
+    
+    except Exception as e:
+        print(f"Error handling user templates: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/new_journal_entry", methods=["POST"])
 def new_journal_entry():
     try:
@@ -133,7 +183,7 @@ def new_journal_entry():
         
         # Get templates if specified
         templates = post.get("templates")
-        
+        print(templates)
         # Get custom questions and format if provided
         custom_questions = post.get("questions")
         custom_format = post.get("format")

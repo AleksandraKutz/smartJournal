@@ -40,6 +40,7 @@ class AnalyzeJournalCommand(JournalCommand):
         
         # If templates are provided as a list, analyze with multiple templates
         if isinstance(self.analysis_templates, list):
+            print()
             return self.ml_service.analyze_with_multiple_templates(
                 self.text, 
                 self.analysis_templates
@@ -160,25 +161,34 @@ class JournalRepository(ABC):
                               completed: bool, rating: Optional[int] = None, 
                               notes: Optional[str] = None) -> bool:
         pass
+    
+    @abstractmethod
+    def get_user_template_preferences(self, username: str) -> Optional[List[str]]:
+        """Get user's template preferences"""
+        pass
+    
+    @abstractmethod
+    def set_user_template_preferences(self, username: str, templates: List[str]) -> bool:
+        """Set user's template preferences"""
+        pass
 
 # Concrete MongoDB repository implementation
 class MongoJournalRepository(JournalRepository):
-    def __init__(self, repository=None):
-        from database_layer import RepositoryFactory
-        self.repository = repository or RepositoryFactory.create_repository()
+    def __init__(self):
+        self.repository = database_layer
     
     def save_journal(self, username: str, text: str, title: str, classification: Dict) -> str:
         success = self.repository.add_journal_entry(username, text, title, classification)
         return "Journal saved" if success else "Failed to save journal"
-        
+    
     def get_user_history(self, username: str) -> List[Dict]:
         history = self.repository.get_user_journal_entries(username)
-        return history if history else []
+        return history or []
     
     def get_user_activities(self, username: str, include_completed: bool = False) -> List[Dict]:
         """Get suggested activities for a user"""
         activities = self.repository.get_user_activities(username, include_completed)
-        return activities if activities else []
+        return activities or []
     
     def update_activity_status(self, username: str, activity_id: str, 
                               completed: bool, rating: Optional[int] = None, 
@@ -186,6 +196,14 @@ class MongoJournalRepository(JournalRepository):
         """Update the status of a suggested activity"""
         return self.repository.update_activity_status(
             username, activity_id, completed, rating, notes)
+    
+    def get_user_template_preferences(self, username: str) -> Optional[List[str]]:
+        """Get user's template preferences"""
+        return self.repository.get_user_template_preferences(username)
+    
+    def set_user_template_preferences(self, username: str, templates: List[str]) -> bool:
+        """Set user's template preferences"""
+        return self.repository.set_user_template_preferences(username, templates)
 
 # Journal Service
 class JournalService:
@@ -230,6 +248,12 @@ class JournalService:
     
     def analyze_and_store_journal(self, username: str, text: str, title: str,
                                   templates: Union[str, List[str]] = None) -> Dict:
+        # If no templates are explicitly provided, use the user's preferences
+        if templates is None:
+            user_templates = self.get_user_template_preferences(username)
+            if user_templates:
+                templates = user_templates
+        
         # First analyze the journal
         analysis_results = self.analyze_journal(text, templates=templates)
         # Then save the journal with the analysis results
@@ -255,6 +279,14 @@ class JournalService:
     def get_available_templates(self) -> List[str]:
         """Get list of all available analysis templates"""
         return AnalysisTemplateRegistry.list_templates()
+        
+    def get_user_template_preferences(self, username: str) -> Optional[List[str]]:
+        """Get a user's template preferences"""
+        return self.repository.get_user_template_preferences(username)
+    
+    def set_user_template_preferences(self, username: str, templates: List[str]) -> bool:
+        """Set a user's template preferences"""
+        return self.repository.set_user_template_preferences(username, templates)
 
 # Service locator for global access to services
 class ServiceLocator:

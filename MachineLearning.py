@@ -75,22 +75,55 @@ class OpenAIClient(APIClient):
         
         # Add the journal entry
         prompt += f"Here is the journal entry to analyze:\n{text}"
-
+        
+        # Add a stronger instruction about requiring valid JSON
+        prompt += "\n\nIMPORTANT: Your response MUST be valid, parseable JSON that exactly follows the format specified above. Do not include any explanation or text outside of the JSON object."
+        
+        print(f"Analyzing with prompt length: {len(prompt)}")
         try:
             response = self.client.chat.completions.create(
-    model='gpt-4',
-    messages=[
-                    {'role': 'system', 'content': 'You are a specialized journal analysis assistant.'},
-        {'role': 'user', 'content': prompt}
-        ]
-    )
-            return json.loads(response.choices[0].message.content)
+                model='gpt-4o-mini',
+                messages=[
+                    {'role': 'system', 'content': 'You are a specialized journal analysis assistant. Always return valid JSON in the exact format requested.'},
+                    {'role': 'user', 'content': prompt}
+                ],
+                response_format={"type": "json_object"}  # Force JSON response if API supports it
+            )
+            
+            content = response.choices[0].message.content
+            
+            # Try to parse the JSON response
+            try:
+                result = json.loads(content)
+                return result
+            except json.JSONDecodeError as json_err:
+                print(f"JSON decode error: {json_err}. Attempting to fix response.")
+                
+                # Try to extract JSON from the response if it might be surrounded by markdown or other text
+                import re
+                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```|(\{[\s\S]*\})', content)
+                if json_match:
+                    json_content = json_match.group(1) or json_match.group(2)
+                    try:
+                        result = json.loads(json_content.strip())
+                        return result
+                    except:
+                        pass
+                        
+                # If we still can't parse it, return a structured error
+                return {
+                    "error": f"Failed to parse JSON response: {str(json_err)}",
+                    "message": "Failed to analyze journal entry due to invalid response format",
+                    "raw_response": content[:500]  # Include a truncated version of the raw response for debugging
+                }
+                
         except Exception as e:
             print(f"Error analyzing text with OpenAI: {e}")
             # Return a basic structure in case of error
             return {
                 "error": str(e),
-                "message": "Failed to analyze journal entry"
+                "message": "Failed to analyze journal entry",
+                "details": "An error occurred while communicating with the language model"
             }
 
 # Mock client for testing
@@ -304,8 +337,58 @@ class MLService:
     def analyze_with_multiple_templates(self, text: str, template_names: List[str]) -> Dict:
         """Analyze text using multiple templates and combine results"""
         results = {}
+
+        # Make sure we have at least one template
+        if not template_names or len(template_names) == 0:
+            # Default to emotion if no templates specified
+            template_names = ["emotion"]
+        
+        # Process each template with proper error handling
         for template_name in template_names:
-            results[template_name] = self.analyze_with_template(text, template_name)
+            try:
+                # Analyze with this template
+                template_results = self.analyze_with_template(text, template_name)
+                
+                # Check if the result contains an error
+                if "error" in template_results:
+                    print(f"Warning: Template {template_name} returned an error: {template_results['error']}")
+                    # Store a simplified error response
+                    results[template_name] = {
+                        "error": f"Analysis with template '{template_name}' failed",
+                        "details": template_results.get("error", "Unknown error")
+                    }
+                else:
+                    # Store successful results
+                    results[template_name] = template_results
+            except Exception as e:
+                print(f"Error analyzing with template {template_name}: {str(e)}")
+                # Store error but continue with other templates
+                results[template_name] = {
+                    "error": f"Analysis with template '{template_name}' failed",
+                    "details": str(e)
+                }
+        
+        # If all templates failed, return a top-level error
+        if all("error" in results.get(template, {}) for template in template_names):
+            return {
+                "error": "All template analyses failed",
+                "message": "Failed to analyze journal entry with any template",
+                "template_errors": results
+            }
+            
+        # If no emotion template included but we need emotions for activity suggestions,
+        # add a default empty emotion structure
+        if "emotion" not in results and "emotion" not in template_names:
+            results["emotion"] = {
+                "Joy": 0,
+                "Sadness": 0,
+                "Anger": 0,
+                "Fear": 0, 
+                "Surprise": 0,
+                "Disgust": 0,
+                "Triggers": {}
+            }
+            
         return results
 
 # For backward compatibility

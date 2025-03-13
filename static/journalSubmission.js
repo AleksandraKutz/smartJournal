@@ -1,17 +1,20 @@
 // Flag to track whether analysis has been performed
 let analysisDone = false;
 let currentAnalysis = null;
+let userTemplates = ["emotion"]; // Default template if none available
+let availableTemplateResults = {}; // Store results for all available templates
 
 // DOM elements
 const form = document.getElementById('journalForm');
 const usernameInput = document.getElementById('username');
 const titleInput = document.getElementById('title');
 const textInput = document.getElementById('text');
-const templateSelector = document.getElementById('templateSelector');
 const analyzeButton = document.getElementById('analyzeButton');
 const submitButton = document.getElementById('submitButton');
 const analyzeSpinner = document.getElementById('analyzeSpinner');
 const submitSpinner = document.getElementById('submitSpinner');
+const templateVisualizer = document.getElementById('templateVisualizer');
+const templateVisualizerContainer = document.getElementById('templateVisualizerContainer');
 
 // Emotion sliders
 const sliders = {
@@ -42,17 +45,17 @@ function handleResponseToJournalSubmission(response) {
     // Store the full analysis for submission
     currentAnalysis = response;
     
-    // Update UI sliders with emotion values
-    d3.select("#angerSlider").property('value', emotionData['Anger']);
-    d3.select("#fearSlider").property('value', emotionData['Fear']);
-    d3.select("#joySlider").property('value', emotionData['Joy']);
-    d3.select("#sadnessSlider").property('value', emotionData['Sadness']);
-    d3.select("#surpriseSlider").property('value', emotionData['Surprise']);
-    d3.select("#disgustSlider").property('value', emotionData['Disgust']);
+    // Update UI sliders with emotion values - using direct property access instead of d3
+    sliders.anger.value = emotionData['Anger'] || 0;
+    sliders.fear.value = emotionData['Fear'] || 0;
+    sliders.joy.value = emotionData['Joy'] || 0;
+    sliders.sadness.value = emotionData['Sadness'] || 0;
+    sliders.surprise.value = emotionData['Surprise'] || 0;
+    sliders.disgust.value = emotionData['Disgust'] || 0;
 
     // Update analysis flag and enable submit button
     analysisDone = true;
-    d3.select("#submitButton").classed('disabled', false);
+    submitButton.classList.remove('disabled');
 
     // Display triggers if available
     let triggersText = "";
@@ -71,7 +74,11 @@ function handleResponseToJournalSubmission(response) {
         triggersText = "<em>No triggers detected.</em>";
     }
 
-    d3.select("#triggers").html(triggersText);
+    // Update triggers element directly instead of using d3
+    const triggersElement = document.getElementById('triggers');
+    if (triggersElement) {
+        triggersElement.innerHTML = triggersText;
+    }
     
     // Show a success message
     showNotification("Analysis complete! You can adjust the values if needed.", "success");
@@ -131,7 +138,6 @@ async function analyzeJournal() {
     const username = usernameInput.value;
     const title = titleInput.value;
     const text = textInput.value;
-    const template = templateSelector.value;
     
     // Show loading state
     analyzeButton.disabled = true;
@@ -148,7 +154,7 @@ async function analyzeJournal() {
                 username,
                 title,
                 text,
-                templates: template,
+                templates: userTemplates, // Use the templates from API
                 action: 'analyze'
             })
         });
@@ -159,10 +165,18 @@ async function analyzeJournal() {
             throw new Error(result.error || 'Failed to analyze journal');
         }
         
-        // Update UI with analysis results
-        updateAnalysisResults(result, template);
+        console.log("Received analysis result:", result);
         
-        // Enable submit button
+        // Check for top-level error
+        if (result.error) {
+            throw new Error(result.message || result.error);
+        }
+        
+        // Update UI with analysis results
+        updateAnalysisResults(result, userTemplates);
+        
+        // Enable submit button (redundant as updateAnalysisResults also does this)
+        // But explicitly set it here again to ensure it's enabled
         submitButton.classList.remove('disabled');
         
         // Show success message
@@ -170,6 +184,9 @@ async function analyzeJournal() {
     } catch (error) {
         console.error('Error analyzing journal:', error);
         showNotification(`Failed to analyze journal: ${error.message}`, 'error');
+        
+        // Reset analysis state
+        resetAnalysisResults();
     } finally {
         // Reset loading state
         analyzeButton.disabled = false;
@@ -190,8 +207,7 @@ async function analyzeAndSaveJournal() {
     const username = usernameInput.value;
     const title = titleInput.value;
     const text = textInput.value;
-    const template = templateSelector.value;
-    
+
     // Show loading state
     analyzeButton.disabled = true;
     submitButton.disabled = true;
@@ -201,14 +217,14 @@ async function analyzeAndSaveJournal() {
         // Make API request for analyze and save
         const response = await fetch('/new_journal_entry', {
             method: 'POST',
-            headers: {
+        headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 username,
                 title,
                 text,
-                templates: template,
+                templates: userTemplates, // Use the templates from API
                 action: 'analyze_and_save'
             })
         });
@@ -219,9 +235,20 @@ async function analyzeAndSaveJournal() {
             throw new Error(result.error || 'Failed to analyze and save journal');
         }
         
+        // Check for top-level error
+        if (result.error) {
+            throw new Error(result.message || result.error);
+        }
+        
         // Update UI with analysis results if available
         if (result.analysis) {
-            updateAnalysisResults(result.analysis, template);
+            try {
+                updateAnalysisResults(result.analysis, userTemplates);
+            } catch (displayError) {
+                console.error('Error updating analysis display:', displayError);
+                // Display warning but continue with save
+                showNotification('Journal saved, but there was an issue displaying the analysis results.', 'warning');
+            }
         }
         
         // Check if an activity was suggested
@@ -245,6 +272,8 @@ async function analyzeAndSaveJournal() {
     } catch (error) {
         console.error('Error analyzing and saving journal:', error);
         showNotification(`Failed to analyze and save journal: ${error.message}`, 'error');
+        
+        // Don't reset the form on error so user can try again
     } finally {
         // Reset loading state
         analyzeButton.disabled = false;
@@ -262,7 +291,7 @@ async function submitJournal() {
         form.classList.add('was-validated');
         return;
     }
-    
+
     // Get form data
     const username = usernameInput.value;
     const title = titleInput.value;
@@ -279,8 +308,13 @@ async function submitJournal() {
         Triggers: {} // Triggers will be populated from analyzed results
     };
     
-    // If we have a current analysis with triggers, include them
-    if (currentAnalysis && currentAnalysis.Triggers) {
+    // If we have analyzed data, get the triggers
+    // First try to get from emotion template if we're using multiple templates
+    if (availableTemplateResults && availableTemplateResults.emotion && availableTemplateResults.emotion.Triggers) {
+        classification.Triggers = availableTemplateResults.emotion.Triggers;
+    } 
+    // Fall back to current analysis if it contains triggers (for single template case)
+    else if (currentAnalysis && currentAnalysis.Triggers) {
         classification.Triggers = currentAnalysis.Triggers;
     }
     
@@ -292,7 +326,7 @@ async function submitJournal() {
         // Make API request
         const response = await fetch('/new_journal_entry', {
             method: 'POST',
-            headers: {
+        headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -340,15 +374,138 @@ async function submitJournal() {
 }
 
 /**
- * Update analysis results based on selected template
+ * Update analysis results based on templates
  * @param {Object} data - The analysis data from the server
- * @param {string} template - The selected template for analysis
+ * @param {Array} templates - The templates used for analysis
  */
-function updateAnalysisResults(data, template) {
-    // Store the current analysis
+function updateAnalysisResults(data, templates) {
+    // Store all template results for later visualization switching
+    availableTemplateResults = data;
+    
+    // Check if we have a multi-template response
+    const isMultiTemplate = templates.length > 1 && typeof data === 'object' && !Array.isArray(data);
+    
+    // Populate template visualizer dropdown
+    updateTemplateVisualizerOptions(data, templates);
+    
+    // If we have multi-template data, use the selected template for display or first valid one
+    if (isMultiTemplate) {
+        // Get currently selected template from dropdown
+        const selectedTemplate = templateVisualizer.value;
+        
+        // Check if the selected template has valid data
+        if (data[selectedTemplate] && !data[selectedTemplate].error) {
+            // Use the selected template
+            updateDisplayForTemplate(selectedTemplate, data[selectedTemplate]);
+        } else {
+            // Find the first valid template data
+            let displayTemplate = null;
+            let templateData = null;
+            
+            // Look for the first available template data without errors
+            for (const t of templates) {
+                if (data[t] && !data[t].error) {
+                    templateData = data[t];
+                    displayTemplate = t;
+                    break;
+                }
+            }
+            
+            // If all templates have errors, use emotion template if available
+            if (!templateData && data.emotion) {
+                templateData = data.emotion;
+                displayTemplate = 'emotion';
+            }
+            
+            // If still no data, show error
+            if (!templateData) {
+                showNotification('No valid template analysis available. Please try again.', 'error');
+                return;
+            }
+            
+            // Update the dropdown to match the displayed template
+            if (templateVisualizer.querySelector(`option[value="${displayTemplate}"]`)) {
+                templateVisualizer.value = displayTemplate;
+            }
+            
+            // Update display with the first valid template
+            updateDisplayForTemplate(displayTemplate, templateData);
+        }
+    } else {
+        // Single template case - use the only template or the first one
+        const template = templates[0] || 'emotion';
+        
+        // Direct data or template-specific data
+        const displayData = data[template] || data;
+        
+        // Check for any errors in the data to display
+        if (displayData && displayData.error) {
+            showNotification(`Analysis error: ${displayData.error}`, 'error');
+            return;
+        }
+        
+        // Update display based on template
+        updateDisplayForTemplate(template, displayData);
+        
+        // Update dropdown to match
+        if (templateVisualizer.querySelector(`option[value="${template}"]`)) {
+            templateVisualizer.value = template;
+        }
+    }
+    
+    // Set analysis flag
+    analysisDone = true;
+    
+    // Enable submit button
+    submitButton.classList.remove('disabled');
+}
+
+/**
+ * Update the template visualizer dropdown with available templates
+ * @param {Object} data - The analysis data from the server
+ * @param {Array} templates - The templates used for analysis
+ */
+function updateTemplateVisualizerOptions(data, templates) {
+    // Show the template visualizer container
+    templateVisualizerContainer.classList.remove('d-none');
+    
+    // Get available templates that have valid data
+    const availableTemplates = Object.keys(data).filter(key => 
+        data[key] && !data[key].error
+    );
+    
+    // If we have multiple valid templates, enable the visualizer
+    if (availableTemplates.length > 1) {
+        // Enable the selector
+        templateVisualizer.disabled = false;
+        
+        // Update selected option if needed
+        if (availableTemplates.includes(templateVisualizer.value)) {
+            // Keep current selection
+        } else if (availableTemplates.length > 0) {
+            // Select first available
+            templateVisualizer.value = availableTemplates[0];
+        }
+    } else if (availableTemplates.length === 1) {
+        // If only one template is valid, select it but disable the dropdown
+        templateVisualizer.value = availableTemplates[0];
+        templateVisualizer.disabled = true;
+    } else {
+        // No valid templates, hide the visualizer
+        templateVisualizerContainer.classList.add('d-none');
+    }
+}
+
+/**
+ * Update the display based on the template type
+ * @param {string} template - The template type
+ * @param {Object} data - The data to display
+ */
+function updateDisplayForTemplate(template, data) {
+    // Store current template data for submission
     currentAnalysis = data;
     
-    // Handle different template types
+    // Get result sections
     const emotionResults = document.getElementById('emotionResults');
     const themeResults = document.getElementById('themeResults');
     const reflectionResults = document.getElementById('reflectionResults');
@@ -368,6 +525,10 @@ function updateAnalysisResults(data, template) {
     } else if (template === 'self_reflection') {
         updateReflectionResults(data);
         reflectionResults.classList.remove('d-none');
+    } else {
+        // Default to emotion if template not recognized
+        updateEmotionResults(data);
+        emotionResults.classList.remove('d-none');
     }
 }
 
@@ -376,7 +537,7 @@ function updateAnalysisResults(data, template) {
  * @param {Object} data - The analysis data from the server
  */
 function updateEmotionResults(data) {
-    // Update sliders
+    // Update sliders directly without using d3
     sliders.joy.value = data.Joy || 0;
     sliders.sadness.value = data.Sadness || 0;
     sliders.anger.value = data.Anger || 0;
@@ -515,6 +676,10 @@ function resetAnalysisResults() {
     // Reset analysis flag and current analysis
     analysisDone = false;
     currentAnalysis = null;
+    availableTemplateResults = {};
+    
+    // Hide template visualizer
+    templateVisualizerContainer.classList.add('d-none');
     
     // Reset sliders
     Object.values(sliders).forEach(slider => slider.value = 0);
@@ -668,8 +833,23 @@ function initFormValidation() {
     });
     
     // Enable submit button when all required fields are filled
+    // Use debouncing to avoid too many rapid calls that could stack up
+    let inputTimeout = null;
     form.addEventListener('input', function() {
-        submitButton.classList.toggle('disabled', !form.checkValidity());
+        // Clear any existing timeout
+        if (inputTimeout) {
+            clearTimeout(inputTimeout);
+        }
+        
+        // Set a new timeout to update the button state
+        inputTimeout = setTimeout(function() {
+            const isValid = form.checkValidity();
+            if (isValid) {
+                submitButton.classList.remove('disabled');
+            } else {
+                submitButton.classList.add('disabled');
+            }
+        }, 100); // 100ms debounce
     });
 }
 
@@ -696,18 +876,78 @@ function addEventListeners() {
     // Submit button
     submitButton.addEventListener('click', submitJournal);
     
-    // Template selector
-    templateSelector.addEventListener('change', function() {
-        // Reset all result sections
-        resetAnalysisResults();
-        
-        // Enable analyze button
-        analyzeButton.disabled = false;
-        
-        // Disable submit button
-        submitButton.classList.add('disabled');
+    // Template visualizer change handler
+    templateVisualizer.addEventListener('change', function() {
+        if (analysisDone && availableTemplateResults) {
+            const selectedTemplate = this.value;
+            const templateData = availableTemplateResults[selectedTemplate] || availableTemplateResults;
+            
+            if (templateData && !templateData.error) {
+                updateDisplayForTemplate(selectedTemplate, templateData);
+            } else {
+                showNotification(`No valid data available for ${selectedTemplate} template`, 'error');
+            }
+        }
+    });
+    
+    // Username input - update template preferences when username changes
+    usernameInput.addEventListener('blur', function() {
+        const username = usernameInput.value.trim();
+        if (username) {
+            fetchUserTemplatePreferences(username);
+        }
     });
 }
+
+/**
+ * Fetch the user's template preferences from the server
+ * @param {string} username - The username to fetch preferences for
+ */
+function fetchUserTemplatePreferences(username) {
+    // Don't fetch if username is empty
+    if (!username) return;
+    
+    // Use a static flag to prevent multiple simultaneous calls
+    if (fetchUserTemplatePreferences.isLoading) return;
+    fetchUserTemplatePreferences.isLoading = true;
+    
+    fetch(`/templates/user/${username}`)
+        .then(response => {
+            if (!response.ok) {
+                // If user not found, that's ok - we'll use defaults
+                if (response.status === 404) {
+                    return { templates: ["emotion"] };
+                }
+                throw new Error(`Error fetching template preferences: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.templates && Array.isArray(data.templates)) {
+                // Store the user's templates
+                userTemplates = data.templates;
+                console.log("Loaded user templates:", userTemplates);
+                
+                // If we already have analysis results, we might need to update the display
+                if (analysisDone && currentAnalysis) {
+                    // Remove any current display and reset
+                    resetAnalysisResults();
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching user template preferences:", error);
+            // Fall back to default template
+            userTemplates = ["emotion"];
+        })
+        .finally(() => {
+            // Reset loading flag
+            fetchUserTemplatePreferences.isLoading = false;
+        });
+}
+
+// Initialize the static flag
+fetchUserTemplatePreferences.isLoading = false;
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', function() {
@@ -719,4 +959,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize with disabled submit button
     submitButton.classList.add('disabled');
+    
+    // Check if username is already filled (e.g. from localStorage)
+    const username = usernameInput.value.trim();
+    if (username) {
+        fetchUserTemplatePreferences(username);
+    }
 });
