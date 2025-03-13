@@ -1,72 +1,163 @@
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
 import datetime
-from config import mongo_pass
-#from transformers import pipeline
-from sklearn.feature_extraction.text import CountVectorizer
-import ML
+from config import mongo_pass, mongo_uri, mongo_db_name
+from typing import Dict, List, Any, Optional, Union
+from abc import ABC, abstractmethod
+import logging
 
-client = MongoClient(f"mongodb://admin:{mongo_pass}@137.184.197.46:27017/")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-db = client['smartJournal']
-
-userTable_collection = db['user_table']
-
-
-def adding_user(user_info):
-    try:
-        userTable_collection.insert_one(user_info)
-    except Exception as e:
-        print(f"Error with adding user to db {e}")
-   
-
-def getuser_post(username):
-    print("before getuserpost inside");
-    user  = userTable_collection.find_one({"username": username})
-    if user:
-        print(user)
-        return user
-    else:
-        return None
+# Abstract Repository interface
+class Repository(ABC):
+    @abstractmethod
+    def add_user(self, user_info: Dict) -> bool:
+        """Add a new user to the database"""
+        pass
     
-def getuser_history(username):
-    print("before getuserpost inside");
-    user  = userTable_collection.find_one({"username": username});
-    if user:
-        print(user)
-        return user['entries']
-    else:
-        return None
+    @abstractmethod
+    def get_user(self, username: str) -> Optional[Dict]:
+        """Get a user by username"""
+        pass
+    
+    @abstractmethod
+    def get_user_journal_entries(self, username: str) -> Optional[List[Dict]]:
+        """Get all journal entries for a user"""
+        pass
+    
+    @abstractmethod
+    def add_journal_entry(self, username: str, text: str, title: str, 
+                         analysis: Dict) -> bool:
+        """Add a new journal entry for a user"""
+        pass
 
-def addNew_post(username, text, title, analysis):
-    user = userTable_collection.find_one({"username": username})
+# MongoDB Implementation
+class MongoRepository(Repository):
+    def __init__(self, connection_string: str, database_name: str):
+        """Initialize MongoDB connection"""
+        try:
+            self.client = MongoClient(connection_string)
+            self.database = self.client[database_name]
+            self.users_collection = self.database['user_table']
+            logger.info(f"Connected to MongoDB database: {database_name}")
+        except Exception as e:
+            logger.error(f"Failed to connect to MongoDB: {e}")
+            raise ConnectionError(f"Could not connect to MongoDB: {e}")
+    
+    def add_user(self, user_info: Dict) -> bool:
+        """Add a new user to the database"""
+        try:
+            self.users_collection.insert_one(user_info)
+            logger.info(f"Added new user: {user_info.get('username')}")
+            return True
+        except Exception as e:
+            logger.error(f"Error adding user to database: {e}")
+            return False
+    
+    def get_user(self, username: str) -> Optional[Dict]:
+        """Get a user by username"""
+        try:
+            user = self.users_collection.find_one({"username": username})
+            if user:
+                logger.info(f"Retrieved user: {username}")
+                return user
+            logger.info(f"User not found: {username}")
+            return None
+        except Exception as e:
+            logger.error(f"Error retrieving user from database: {e}")
+            return None
+    
+    def get_user_journal_entries(self, username: str) -> Optional[List[Dict]]:
+        """Get all journal entries for a user"""
+        try:
+            user = self.users_collection.find_one({"username": username})
+            if user and 'entries' in user:
+                logger.info(f"Retrieved journal entries for user: {username}")
+                return user['entries']
+            logger.info(f"No journal entries found for user: {username}")
+            return None
+        except Exception as e:
+            logger.error(f"Error retrieving journal entries from database: {e}")
+            return None
+    
+    def add_journal_entry(self, username: str, text: str, title: str, 
+                          analysis: Dict) -> bool:
+        """Add a new journal entry for a user"""
+        try:
+            # Check if user exists
+            user = self.users_collection.find_one({"username": username})
+            
+            # Create timestamp
+            timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            
+            # Create user if they don't exist
+            if not user:
+                logger.info(f"Creating new user: {username}")
+                new_user = {
+                    "username": username,
+                    "entries": []
+                }
+                self.users_collection.insert_one(new_user)
+            
+            # Add journal entry
+            entry = {
+                "timestamp": timestamp,
+                "title": title,
+                "text": text,
+                "word_frequencies": [],
+                "classification": analysis
+            }
+            
+            self.users_collection.update_one(
+                {"username": username},
+                {"$push": {"entries": entry}}
+            )
+            
+            logger.info(f"Added journal entry for user: {username}, title: {title}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error adding journal entry to database: {e}")
+            return False
 
-    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
-       
-    if not user:
-        new_user = {
-            "username": username,
-            "entries": []
-        }
+# Repository Factory
+class RepositoryFactory:
+    @staticmethod
+    def create_repository(repository_type: str = "mongo") -> Repository:
+        """Create and return the appropriate repository implementation"""
+        if repository_type.lower() == "mongo":
+            connection_string = mongo_uri if mongo_uri else f"mongodb://admin:{mongo_pass}@137.184.197.46:27017/"
+            return MongoRepository(connection_string, mongo_db_name)
+        # Add more repository types here (e.g., SQL, file-based, etc.)
+        raise ValueError(f"Unsupported repository type: {repository_type}")
 
-        userTable_collection.insert_one(new_user)
+# Global repository instance for backward compatibility
+_repository = RepositoryFactory.create_repository()
 
-    #top_10_words = ML.countFrequency(text)
+# Clean modern functions
+def add_user(user_info: Dict) -> bool:
+    """Add a new user to the database"""
+    return _repository.add_user(user_info)
 
-    userTable_collection.update_one(
-        {"username": username},
-        {"$push": {"entries": {
-            "timestamp": timestamp,
-            "title": title,
-            "text": text,
-            "word_frequencies": [],
-            "classification": analysis
-        }}}
-    )
+def get_user(username: str) -> Optional[Dict]:
+    """Get user data by username"""
+    return _repository.get_user(username)
 
-    return;
+def get_user_journal_entries(username: str) -> Optional[List[Dict]]:
+    """Get journal entries for a user"""
+    return _repository.get_user_journal_entries(username)
 
-#text  = getuser_post("silly_billy77")
-#test = getuser_history("andrews")
-print("database layer imported")
+def add_journal_entry(username: str, text: str, title: str, analysis: Dict) -> bool:
+    """Add a new journal entry for a user"""
+    return _repository.add_journal_entry(username, text, title, analysis)
+
+# Map legacy function names to new ones for backward compatibility
+adding_user = add_user
+getuser_post = get_user
+getuser_history = get_user_journal_entries
+addNew_post = add_journal_entry
+
+logger.info("Database layer imported")
 
