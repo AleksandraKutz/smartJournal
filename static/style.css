@@ -35,6 +35,7 @@
     background: #703403;
 }
 
+/* Legacy styles - kept for reference but the new calendar grid system is used instead 
 .calendar .row {
     cursor: pointer;
   }
@@ -42,7 +43,7 @@
     text-align: center;
     padding: 10px;
     border: 1px solid #ddd;
-    min-height: 40px; /* Ensures visibility; adjust as needed */
+    min-height: 40px;
   }
   .outside-year {
     opacity: 0.5;
@@ -65,4 +66,464 @@
   
 .right-item {
     background-color: green;
+}
+*/
+
+/* Three-month calendar layout */
+.three-month-container, .three-month-calendar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 30px;
+    width: 100%;
+}
+
+.calendar-container {
+    flex: 1;
+    max-width: 32%;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding-bottom: 8px;
+    background-color: white;
+    margin-bottom: 20px;
+}
+
+.calendar-container h5 {
+    margin: 8px 0;
+    font-size: 1rem;
+    text-align: center;
+    color: #495057;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-rows: auto;
+    gap: 1px;
+    background-color: #dee2e6;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+    width: 95%;
+    margin: 0 auto;
+}
+
+.calendar-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background-color: #dee2e6;
+}
+
+.calendar-cell {
+    background-color: #f8f9fa;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Color legend styles */
+#colorLegend {
+    margin: 15px auto 30px auto;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    max-width: 500px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+#colorLegend h4 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    text-align: center;
+    color: #495057;
+}
+
+.legend-colors {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.legend-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    margin-right: 6px;
+    border: 1px solid #ddd;
+}
+
+.legend-label {
+    font-size: 13px;
+    color: #495057;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+    .three-month-container, .three-month-calendar {
+        flex-wrap: nowrap;
+        gap: 10px;
+    }
+    
+    .calendar-container {
+        min-width: 0;
+    }
+    
+    .calendar-cell {
+        min-width: 18px;
+        min-height: 18px;
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .three-month-container, .three-month-calendar {
+        flex-direction: column;
+    }
+    
+    .calendar-container {
+        max-width: 100%;
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+}
+
+/* Overall History Page Layout */
+#journalHistoryContainer .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#journalHistoryContainer .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#journalHistoryContainer .card-body {
+    flex: 1 1 auto;
+    overflow: auto;
+}
+
+/* Calendar styles */
+.calendar-grid {
+    display: grid;
+    grid-template-rows: auto;
+    gap: 1px;
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.calendar-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background-color: #e0e0e0;
+}
+
+.calendar-cell {
+    background-color: #f8f9fa;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Adjust cell size for better fit */
+@media (min-width: 768px) {
+    .calendar-cell {
+        min-width: 25px;
+        min-height: 25px;
+    }
+}
+
+.calendar-cell:hover {
+    background-color: #e9ecef;
+    transform: scale(1.05);
+    z-index: 1;
+}
+
+.calendar-header-cell {
+    background-color: #6c757d;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.outside-month {
+    color: #adb5bd;
+}
+
+.current-month {
+    font-weight: 500;
+}
+
+.selected-week {
+    background-color: #cfe2ff !important;
+    border: 2px solid #0d6efd !important;
+    position: relative;
+    z-index: 1;
+}
+
+.selected-week .calendar-cell {
+    background-color: #e2eafc;
+}
+
+/* Calendar navigation styles */
+#calendarTitle {
+    min-width: 180px;
+    text-align: center;
+    line-height: 1.4;
+    font-size: 1rem;
+}
+
+#prevYearBtn, #nextYearBtn, #prevMonthBtn, #nextMonthBtn {
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+/* Color legend improvements */
+.legend-color {
+    border-radius: 2px;
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 4px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+#colorMetricSelect {
+    max-width: 200px;
+    margin: 0 auto 15px auto;
+}
+
+/* Entry list improvements */
+#journalEntryList {
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: 4px;
+}
+
+#week-overview {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+#week-overview h5 {
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+#week-overview .list-group-item {
+    padding: 0.5rem 1rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .calendar-cell {
+        font-size: 0.75rem;
+        padding: 1px;
+    }
+    
+    #calendarTitle {
+        font-size: 0.9rem;
+        min-width: 100px;
+    }
+    
+    .legend-color {
+        width: 12px !important;
+        height: 12px !important;
+    }
+
+    .month-container h6 {
+        font-size: 0.9rem;
+        margin: 5px 0;
+    }
+}
+
+/* For larger screens make calendar more compact on history page */
+@media (min-width: 1400px) {
+    #journalHistoryContainer .col-lg-6:first-child {
+        flex: 0 0 auto;
+        width: 65%;
+    }
+    
+    #journalHistoryContainer .col-lg-6:last-child {
+        flex: 0 0 auto;
+        width: 35%;
+    }
+}
+
+/* Toast notification styles */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+/* Loading spinner styles */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1060;
+}
+
+/* Chart styling */
+.emotion-chart-container {
+    width: 100%;
+    background-color: #fcfcfc;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+.emotion-chart-container svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+}
+
+.emotion-chart-container .line {
+    fill: none;
+    stroke-width: 2.5;
+    opacity: 0.8;
+}
+
+.emotion-chart-container .grid line {
+    stroke: #e0e0e0;
+    stroke-opacity: 0.7;
+    shape-rendering: crispEdges;
+}
+
+.emotion-chart-container .grid path {
+    stroke-width: 0;
+}
+
+.emotion-chart-container .dot {
+    stroke: #fff;
+    stroke-width: 1;
+}
+
+.emotion-chart-container .x-axis text,
+.emotion-chart-container .y-axis text,
+.emotion-chart-container .legend text {
+    font-size: 0.7rem;
+    font-family: sans-serif;
+}
+
+.emotion-chart-container .legend rect {
+    stroke: #fff;
+    stroke-width: 1;
+}
+
+.emotion-chart-container .dot:hover {
+    r: 5;
+    stroke-width: 2;
+    cursor: pointer;
+}
+
+.emotion-chart-container .line:hover {
+    opacity: 1;
+    stroke-width: 3;
+}
+
+/* Emotion box styling */
+.emotion-box {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.85;
+}
+
+.emotion-box:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+}
+
+.emotion-label {
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+/* Week overview styling */
+#week-overview {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+#week-overview h5 {
+    margin-bottom: 15px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+/* Improve calendar display */
+.calendar-container {
+    max-width: 100%;
+    margin-bottom: 20px;
+}
+
+.calendar-cell {
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out;
+}
+
+.calendar-cell:hover {
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+/* Make month calendars stack better on smaller screens */
+@media (max-width: 768px) {
+    .three-month-calendar {
+        flex-direction: column;
+    }
+    
+    .calendar-container {
+        max-width: 100%;
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
 }

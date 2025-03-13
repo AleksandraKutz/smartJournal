@@ -2,8 +2,15 @@ import database_layer
 from MachineLearning import MLService, AnalysisTemplateRegistry
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional, Union
+import datetime
+import logging
+from activity_suggestion import suggest_activity_from_analysis, SuggestedActivity
 
 print("importing application logic")
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Command Pattern
 class JournalCommand(ABC):
@@ -56,9 +63,83 @@ class SaveJournalCommand(JournalCommand):
         self.title = title
         self.classification = classification
     
-    def execute(self) -> str:
-        return self.repository.save_journal(
+    def execute(self) -> Dict:
+        # Save the journal entry
+        success = self.repository.save_journal(
             self.username, self.text, self.title, self.classification)
+        
+        result = {"success": success, "message": "Journal saved" if success else "Failed to save journal"}
+        
+        # Check for activity suggestions based on analysis
+        suggested_activity = suggest_activity_from_analysis(self.classification)
+        
+        # If an activity is suggested, save it and include in the result
+        if suggested_activity:
+            # Create a SuggestedActivity object
+            activity = suggested_activity['activity']
+            reason = suggested_activity['reason']
+            
+            activity_suggestion = {
+                "activity_id": activity['id'],
+                "activity_name": activity['name'],
+                "activity_description": activity['description'],
+                "activity_category": activity['category'],
+                "reason": reason,
+                "suggested_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "completed": False,
+                "mood_benefits": activity.get('mood_benefits', []),
+                "difficulty": activity.get('difficulty', 1),
+                "duration_minutes": activity.get('duration_minutes', 15)
+            }
+            
+            # Save the suggested activity
+            database_layer.add_suggested_activity(self.username, activity_suggestion)
+            
+            # Add the suggestion to the result
+            result["activity_suggested"] = True
+            result["suggested_activity"] = activity_suggestion
+        else:
+            result["activity_suggested"] = False
+        
+        return result
+
+class SuggestActivityCommand(JournalCommand):
+    def __init__(self, username: str, journal_analysis: Dict):
+        self.username = username
+        self.journal_analysis = journal_analysis
+    
+    def execute(self) -> Dict:
+        # Get activity suggestion based on analysis
+        suggested_activity = suggest_activity_from_analysis(self.journal_analysis)
+        
+        # If no suggestion, return early
+        if not suggested_activity:
+            return {"activity_suggested": False}
+        
+        # Create activity suggestion object
+        activity = suggested_activity['activity']
+        reason = suggested_activity['reason']
+        
+        activity_suggestion = {
+            "activity_id": activity['id'],
+            "activity_name": activity['name'],
+            "activity_description": activity['description'],
+            "activity_category": activity['category'],
+            "reason": reason,
+            "suggested_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "completed": False,
+            "mood_benefits": activity.get('mood_benefits', []),
+            "difficulty": activity.get('difficulty', 1),
+            "duration_minutes": activity.get('duration_minutes', 15)
+        }
+        
+        # Save the suggested activity
+        database_layer.add_suggested_activity(self.username, activity_suggestion)
+        
+        return {
+            "activity_suggested": True,
+            "suggested_activity": activity_suggestion
+        }
 
 # Journal Repository interface
 class JournalRepository(ABC):
@@ -68,6 +149,16 @@ class JournalRepository(ABC):
         
     @abstractmethod
     def get_user_history(self, username: str) -> List[Dict]:
+        pass
+    
+    @abstractmethod
+    def get_user_activities(self, username: str, include_completed: bool = False) -> List[Dict]:
+        pass
+    
+    @abstractmethod
+    def update_activity_status(self, username: str, activity_id: str, 
+                              completed: bool, rating: Optional[int] = None, 
+                              notes: Optional[str] = None) -> bool:
         pass
 
 # Concrete MongoDB repository implementation
@@ -81,8 +172,20 @@ class MongoJournalRepository(JournalRepository):
         return "Journal saved" if success else "Failed to save journal"
         
     def get_user_history(self, username: str) -> List[Dict]:
-        history = self.repository.get_user_history(username)
+        history = self.repository.get_user_journal_entries(username)
         return history if history else []
+    
+    def get_user_activities(self, username: str, include_completed: bool = False) -> List[Dict]:
+        """Get suggested activities for a user"""
+        activities = self.repository.get_user_activities(username, include_completed)
+        return activities if activities else []
+    
+    def update_activity_status(self, username: str, activity_id: str, 
+                              completed: bool, rating: Optional[int] = None, 
+                              notes: Optional[str] = None) -> bool:
+        """Update the status of a suggested activity"""
+        return self.repository.update_activity_status(
+            username, activity_id, completed, rating, notes)
 
 # Journal Service
 class JournalService:
@@ -103,19 +206,48 @@ class JournalService:
         )
         return command.execute()
     
-    def save_journal(self, username: str, text: str, title: str, classification: Dict) -> str:
+    def save_journal(self, username: str, text: str, title: str, classification: Dict) -> Dict:
         command = SaveJournalCommand(
             self.repository, username, text, title, classification
         )
         return command.execute()
+    
+    def suggest_activity(self, username: str, journal_analysis: Dict) -> Dict:
+        """Suggest an activity based on journal analysis"""
+        command = SuggestActivityCommand(username, journal_analysis)
+        return command.execute()
+    
+    def get_user_activities(self, username: str, include_completed: bool = False) -> List[Dict]:
+        """Get suggested activities for a user"""
+        return self.repository.get_user_activities(username, include_completed)
+    
+    def update_activity_status(self, username: str, activity_id: str, 
+                              completed: bool, rating: Optional[int] = None, 
+                              notes: Optional[str] = None) -> bool:
+        """Update the status of a suggested activity"""
+        return self.repository.update_activity_status(
+            username, activity_id, completed, rating, notes)
     
     def analyze_and_store_journal(self, username: str, text: str, title: str,
                                   templates: Union[str, List[str]] = None) -> Dict:
         # First analyze the journal
         analysis_results = self.analyze_journal(text, templates=templates)
         # Then save the journal with the analysis results
-        self.save_journal(username, text, title, analysis_results)
-        return analysis_results
+        save_result = self.save_journal(username, text, title, analysis_results)
+        
+        # Combine results
+        result = {
+            "analysis": analysis_results,
+            "save_status": save_result.get("success", False),
+            "message": save_result.get("message", ""),
+            "activity_suggested": save_result.get("activity_suggested", False)
+        }
+        
+        # If an activity was suggested, include it
+        if save_result.get("activity_suggested", False):
+            result["suggested_activity"] = save_result.get("suggested_activity")
+        
+        return result
     
     def get_journal_history(self, username: str) -> List[Dict]:
         return self.repository.get_user_history(username)
@@ -148,7 +280,7 @@ def analyzeJournal(username: str, text: str, title: str,
     service = ServiceLocator.get_instance().journal_service
     return service.analyze_journal(text, templates=templates)
 
-def saveJournal(username: str, text: str, title: str, classification: Dict) -> str:
+def saveJournal(username: str, text: str, title: str, classification: Dict) -> Dict:
     service = ServiceLocator.get_instance().journal_service
     return service.save_journal(username, text, title, classification)
 
@@ -156,12 +288,14 @@ def getJournalHistory(username: str) -> List[Dict]:
     service = ServiceLocator.get_instance().journal_service
     return service.get_journal_history(username)
 
-  
-#   assume sliders are there,  analyze button leads to new slider values, use changes on
-# submit button would use get values from sliders
-# difference no ML module would be called, 
+def getUserActivities(username: str, include_completed: bool = False) -> List[Dict]:
+    service = ServiceLocator.get_instance().journal_service
+    return service.get_user_activities(username, include_completed)
 
-#  My advice:  analyzeJournal method separate from store,  add in id draft field
+def updateActivityStatus(username: str, activity_id: str, completed: bool,
+                       rating: Optional[int] = None, notes: Optional[str] = None) -> bool:
+    service = ServiceLocator.get_instance().journal_service
+    return service.update_activity_status(username, activity_id, completed, rating, notes)
 
 class AnalysisResult:
     def __init__(self, success: bool, data: Dict = None, error: str = None):

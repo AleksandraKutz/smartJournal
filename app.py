@@ -39,6 +39,80 @@ def user_history(username):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route("/activities/<username>/", methods=["GET"])
+def user_activities(username):
+    """Get suggested activities for a user"""
+    try:
+        # Get query parameters
+        include_completed = request.args.get('include_completed', 'false').lower() == 'true'
+        
+        # Get activities from service
+        activities = journal_service.get_user_activities(username, include_completed)
+        
+        return jsonify({
+            "activities": activities,
+            "count": len(activities)
+        })
+        
+    except Exception as e:
+        print(f"Error retrieving activities: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/activities/<username>/<activity_id>", methods=["PUT"])
+def update_activity(username, activity_id):
+    """Update the status of an activity"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Extract fields from request
+        completed = data.get('completed')
+        if completed is None:
+            return jsonify({"error": "Missing required field: completed"}), 400
+            
+        rating = data.get('rating')
+        notes = data.get('notes')
+        
+        # Update activity status
+        success = journal_service.update_activity_status(
+            username, activity_id, completed, rating, notes
+        )
+        
+        if success:
+            return jsonify({"message": "Activity updated successfully"})
+        else:
+            return jsonify({"error": "Failed to update activity"}), 404
+            
+    except Exception as e:
+        print(f"Error updating activity: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/suggest_activity/<username>", methods=["POST"])
+def suggest_activity(username):
+    """Manually trigger an activity suggestion"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Get journal analysis from request
+        journal_analysis = data.get('analysis')
+        if not journal_analysis:
+            return jsonify({"error": "Missing journal analysis"}), 400
+        
+        # Get activity suggestion
+        result = journal_service.suggest_activity(username, journal_analysis)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error suggesting activity: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/new_journal_entry", methods=["POST"])
 def new_journal_entry():
     try:

@@ -44,17 +44,17 @@ class OpenAIClient(APIClient):
                     }
                 },
                 "example": {
-                    "Joy": 8,
-                    "Sadness": 0,
-                    "Anger": 0,
-                    "Fear": 0,
-                    "Surprise": 0,
-                    "Disgust": 0,
-                    "Triggers": {
-                        "Joy": ["Won lottery"],
-                        "Fear": ["Wild animal attack"]
-                    }
+                "Joy": 8,
+                "Sadness": 0,
+                "Anger": 0,
+                "Fear": 0,
+                "Surprise": 0,
+                "Disgust": 0,
+                "Triggers": {
+                    "Joy": ["Won lottery"],
+                    "Fear": ["Wild animal attack"]
                 }
+            }
             }
         
         # Build prompt dynamically
@@ -78,12 +78,12 @@ class OpenAIClient(APIClient):
 
         try:
             response = self.client.chat.completions.create(
-                model='gpt-4',
-                messages=[
+    model='gpt-4',
+    messages=[
                     {'role': 'system', 'content': 'You are a specialized journal analysis assistant.'},
-                    {'role': 'user', 'content': prompt}
-                ]
-            )
+        {'role': 'user', 'content': prompt}
+        ]
+    )
             return json.loads(response.choices[0].message.content)
         except Exception as e:
             print(f"Error analyzing text with OpenAI: {e}")
